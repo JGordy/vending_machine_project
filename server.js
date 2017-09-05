@@ -1,9 +1,10 @@
-const express = require("express");
+const express         = require("express");
 const mustacheExpress = require("mustache-express");
-const bodyParser = require("body-parser");
-const path = require("path");
-const routes = require("./routes/index");
-const morgan = require("morgan");
+const bodyParser      = require("body-parser");
+const path            = require("path");
+const routes          = require("./routes/index");
+const morgan          = require("morgan");
+const models           = require("./models/index");
 
 const app = express();
 
