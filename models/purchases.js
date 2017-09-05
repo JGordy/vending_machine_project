@@ -2,7 +2,7 @@
 module.exports = function(sequelize, DataTypes) {
   var Purchase = sequelize.define('Purchase', {
     itemId: DataTypes.INTEGER,
-    money_given: DataTypes.INTEGER
+    moneyPaid: DataTypes.INTEGER
   }, {});
 
   Purchase.associate = function(models) {

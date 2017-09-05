@@ -16,7 +16,7 @@ module.exports = {
           key: "id"
         }
       },
-      money_paid: {
+      moneyPaid: {
         type: Sequelize.INTEGER,
         allowNull: false
       },
