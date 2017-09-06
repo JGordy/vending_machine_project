@@ -19,8 +19,9 @@ router.get("/api/customer/items", function(req, res) {
   models.Item.findAll({})
   .then(function(data) {
     if (data) {
+      data = {"status": "success", data: data};
       res.setHeader("Content-Type", "application/json");
-      res.status(200).json(data);
+      res.status(200).send(data);
     } else {
       res.send("No items found");
     }
@@ -31,19 +32,58 @@ router.get("/api/customer/items", function(req, res) {
 });
 
 
-// purchase an item
+//√ purchase an item √
 router.post("/api/customer/items/:itemId/purchases", function(req,res) {
-  let purchaseItems = {
-    itemId: req.params.itemId,
-    moneyPaid: req.body.moneyPaid
-  }
-  models.Purchase.create(purchaseItems)
-  .then(function(data) {
-    res.status(201).send(data);
+
+  models.Item.findOne({
+      where: {id: req.params.itemId}
+  })
+  .then(function(item) {
+    if (req.body.moneyPaid < item.cost) {
+      let error = {
+        "status": "fail",
+        "data": {
+          "moneyPaid": req.body.moneyPaid,
+          "moneyRequired": item.cost
+        }
+      }
+      res.status(400).send(error)
+    } else if (item.quantity < 1) {
+      let error = {
+        "status": "fail",
+        "data": {
+          "item": item.item,
+          "quantity": item.quantity
+        }
+      }
+      res.status(400).send(error);
+    } else {
+      let change = req.body.moneyPaid - item.cost;
+      models.Item.update({quantity: item.quantity - 1}, {
+         where: {id: req.params.itemId}
+       })
+       .then(function(data) {
+         models.Purchase.create({
+           itemId: item.id,
+           moneyPaid: req.body.moneyPaid - change
+         })
+         .then(function(data) {
+           res.setHeader("Content-Type", "application/json");
+           data = {"status": "success", "yourChange": change, item: item, data: data};
+           res.status(200).send(data)
+         })
+         .catch(function(err) {
+           err = {"status": "fail", error: err};
+           res.status(500).res.send(err)
+         })
+       })
+    }
+
   })
   .catch(function(err) {
-    res.status(500).json(err)
-  })
+    res.status(500).send("Whoops, my bad. Internal Error...")
+  });
+
 });
 
 
@@ -56,11 +96,13 @@ router.get("/api/vendor/purchases", function(req, res) {
   ]
   })
   .then(function(data) {
+    data = {"status": "success", data: data};
     res.setHeader("Content-Type", "application/json");
     res.status(200).json(data);
   })
   .catch(function(err) {
-    res.status(500).send("Whoops, my bad. Internal Error...")
+    err = {"status": "fail", error: err};
+    res.status(500).send(err)
   });
 });
 
@@ -71,7 +113,8 @@ router.get("/api/vendor/money", function(req, res) {
   .then(function(data) {
     models.Purchase.sum("moneyPaid")
     .then(function(data) {
-      res.json(data)
+      data = {"status": "success", data: {totalMoney: data}};
+      res.send(data)
     })
   })
 });
@@ -88,15 +131,17 @@ router.post("/api/vendor/items", function(req, res) {
 
   models.Item.create(itemObject)
   .then(function(data) {
+    data = {"status": "success", data: data};
     res.status(201).send(data);
   })
   .catch(function(err) {
+    err = {"status": "fail", error: err};
     res.status(500).json(err)
   })
 });
 
 
-// update item quantity, description, and cost
+//√ update item quantity, description, and cost √
 router.put("/api/vendor/items/:itemId", function(req, res) {
   models.Item.update({
     item: req.body.item,
@@ -104,14 +149,16 @@ router.put("/api/vendor/items/:itemId", function(req, res) {
     quantity: req.body.quantity
   }, {
     where: {
-      id: req.params.id
+      id: req.body.id
     }
   })
   .then(function(data) {
-    res.status(204).send("Update successful")
+    data = {"status": "success", data: data};
+    res.status(204).send(data)
   })
   .catch(function(err) {
-    res.status(403).res.send("Sorry for our technical hiccups")
+    err = {"status": "fail", error: err};
+    res.status(500).res.send(err)
   })
 });
 
